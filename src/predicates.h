@@ -178,7 +178,7 @@ namespace fastfood
 
         std::ostream& print(std::ostream& os) const override
         {
-            return CompositePredicateMixin::print(os, "OR");
+            return CompositePredicateMixin::print(os, "||");
         }
 
     };
@@ -203,7 +203,7 @@ namespace fastfood
         
         std::ostream& print(std::ostream& os) const override
         {
-            return CompositePredicateMixin::print(os, "AND");
+            return CompositePredicateMixin::print(os, "&&");
         }
     };
 }
