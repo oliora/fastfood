@@ -10,10 +10,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU
 endif()
 
 # Boost.Fusion supports std::tuple starting from Boost 1.58.
-find_package(Boost 1.58 REQUIRED COMPONENTS system)
+find_package(Boost 1.58 REQUIRED COMPONENTS system program_options thread)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
 enable_testing()
 
 add_subdirectory(src)
+add_subdirectory(test)

@@ -1,10 +1,11 @@
 #include "fql.h"
+#include "recs_parser.h"
 #include <iostream>
-
-
+#include <fstream>
+#include <sstream>
 /*
  Performance improving ideas:
- - ? For field names instead of the string use unique id (of size_t type) that's hashed to itself
+ - ? For field names instead of the string use unique id (of size_t type) that's hashed to itself or string + precalculated hash
 
  */
 
@@ -16,18 +17,50 @@ int main(int argc, char *argv[])
 {
     try
     {
-        //std::string test{"fi-eLd_1 != \"   bla-bla\\n-\\t-\\\" xyz \\\\     -\""};
+        if (argc <= 1)
+            throw std::runtime_error("Usage: fastfood <query> [<filename>]");
 
-        //std::string test{"SELECT f1, f2 WHERE Fi-eld_1 != \"   bla-bla-\\t-\\\" xyz \\\\     -\" or field2 <= 12 or f.12 > 42.52 and ghghg < \"45\" or f45 == \"\""};
+        auto query = fql::parse_query(argv[1]);
 
-        std::string test{"SELECT f1, f2, f3 where Field1 = \"bla\" or (f-i <> 1.5)"};
+        FieldSet interestingFields;
 
-        auto query = fql::parse_query(test);
+        interestingFields.insert(begin(query.m_fields), end(query.m_fields));
+        query.m_where->visit_fields([&interestingFields](Name f) { interestingFields.insert(f); });
 
-        for (auto& f: query.m_fields)
-            std::cout << f << "\n";
+        std::ifstream input_file;
+        std::istream *is = &std::cin;
 
-        query.m_where->print(std::cout) << "\n";
+        if (argc > 1)
+        {
+            const std::string inputFilename(argv[2]);
+            input_file.open(inputFilename, std::ios_base::binary);
+            if (!input_file)
+                throw std::runtime_error("Can not open file '" + inputFilename + "'");
+            is = &input_file;
+        }
+
+
+        RecsParser parser(*is, interestingFields);
+
+        while (parser.next())
+        {
+            const auto& currentRecord = parser.current();
+
+            if (query.m_where->match(currentRecord))
+            {
+                // Do something with current record
+                for (auto&& r: currentRecord)
+                {
+                    if (!r.second.which())
+                        continue;
+
+                    std::cout << r.first.str() << ": ";
+                    boost::apply_visitor(RecordPrinter{std::cout}, r.second);
+                    std::cout << "\n";
+                }
+                std::cout << "\n";
+            }
+        }
     }
     catch (const std::exception& ex)
     {

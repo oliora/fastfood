@@ -112,10 +112,25 @@ namespace fastfood
             return fastfood::print(os, m_val);
         }
 
+        void visit_fields(const std::function<void(Name)>& visitor) const override { visitor(m_field); }
+
     private:
-        std::string m_field;
+        Name m_field;
         T m_val;     // use boost::compressed_pair
         Comp m_comp; //
+    };
+
+    class DummyPredicate final: public Predicate
+    {
+    public:
+        bool match(const Record& record) const override { return true; }
+
+        std::ostream& print(std::ostream& os) const override
+        {
+            return os << "<nop>";
+        }
+
+        void visit_fields(const std::function<void(Name)>&) const override {}
     };
 
     class CompositePredicateMixin
@@ -133,7 +148,13 @@ namespace fastfood
     protected:
         const std::vector<PredicatePtr>& predicates() const { return m_predicates; }
 
-        std::ostream& print(std::ostream& os, const string_view& op) const
+        void visit_fields(const std::function<void(Name)>& visitor) const
+        {
+            for (auto& p: m_predicates)
+                p->visit_fields(visitor);
+        }
+
+        std::ostream& print(std::ostream& os, string_view op) const
         {
             if (m_predicates.empty())
                 return os;
@@ -181,6 +202,10 @@ namespace fastfood
             return CompositePredicateMixin::print(os, "||");
         }
 
+        void visit_fields(const std::function<void(Name)>& visitor) const override
+        {
+            return CompositePredicateMixin::visit_fields(visitor);
+        }
     };
 
     // AND
@@ -204,6 +229,11 @@ namespace fastfood
         std::ostream& print(std::ostream& os) const override
         {
             return CompositePredicateMixin::print(os, "&&");
+        }
+
+        void visit_fields(const std::function<void(Name)>& visitor) const override
+        {
+            return CompositePredicateMixin::visit_fields(visitor);
         }
     };
 }

@@ -109,9 +109,12 @@ namespace fql {
 
         struct make_query
         {
-            Query operator() (const std::vector<std::string>& fields, const PredicatePtr& pred) const
+            Query operator() (const std::vector<std::string>& fields, const boost::optional<PredicatePtr>& pred) const
             {
-                return Query{fields, pred};
+                if (pred && *pred)
+                    return Query{fields, *pred};
+                else
+                    return Query{fields, std::make_shared<DummyPredicate>()};
             }
         };
 
@@ -223,7 +226,7 @@ namespace fql {
             boost::phoenix::function<detail::make_query> make_query;
 
             query = no_case[
-                (lit("select") > (common.field_name % ',') > "where" > where)[_val = make_query(_1, _2)]
+                (lit("select") > (common.field_name % ',') > -("where" > where))[_val = make_query(_1, _2)]
             ];
         }
 
@@ -238,9 +241,6 @@ namespace fql {
     template<class InputIt>
     Query parse_query(InputIt first, InputIt last)
     {
-        using boost::spirit::qi::_1;
-        using boost::phoenix::ref;
-
         QueryGrammar<InputIt> parser;
 
         Query res;
@@ -250,8 +250,7 @@ namespace fql {
         return res;
     }
 
-
-    Query parse_query(const string_view& s)
+    Query parse_query(string_view s)
     {
         return parse_query(s.begin(), s.end());
     }

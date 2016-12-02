@@ -9,12 +9,11 @@
  TODO:
     v1:
     - Aggregation
-    - Sorting
     - regex match =~ (other name? MATCH, ~) operator
     v2:
     - IN operator
     - BETWEEN operator
-    - LIKE operator (for simpler than regex 'starts with')
+    - LIKE operator (simpler than force user to write a regex for 'starts with')
     - improve parsing errors diagnostic
     - ? All fields (*)
     - ? IS NULL, IS NOT NULL operators
@@ -27,9 +26,10 @@ namespace fastfood { namespace fql {
     struct Query
     {
         std::vector<std::string> m_fields;
+        //std::vector<Aggregator> m_aggregators;
         PredicatePtr m_where;
     };
 
-    Query parse_query(const string_view& s);
+    Query parse_query(string_view s);
 
 }}
